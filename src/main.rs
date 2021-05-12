@@ -19,7 +19,7 @@ use std::thread::sleep;
 mod precise;
 
 fn main() {
-    let runner = precise::get_runner();
+    let mut runner = precise::get_runner();
     sleep(Duration::new(3, 0));
     let pa = match open_audio_port() {
         Ok(port) => port,
@@ -27,7 +27,7 @@ fn main() {
     };
 
     let rb = RingBuffer::<i16>::new(65536);
-    let (sender, receiver) = rb.split();
+    let (sender, mut receiver) = rb.split();
     let mut stream = open_stream(&pa, sender).unwrap();
 
     match stream.start() {
@@ -35,17 +35,19 @@ fn main() {
         Err(error) => panic!("{}", error.to_string()),
     };
 
-    wait_for_wakeword(receiver, runner);
-    record_for_stt();
+    wait_for_wakeword(&mut receiver, &mut runner);
+    record_for_stt(&receiver);
     send_to_mycroft();
     match close_stream(stream){
         Ok(_) => {}
         Err(error) => panic!("{}", error.to_string()),
     };
+    runner.stop();
 }
 
 
-fn wait_for_wakeword(mut receiver: Consumer<i16>, mut runner: precise::PreciseEngine) {
+fn wait_for_wakeword(receiver: &mut Consumer<i16>,
+                     runner: &mut precise::PreciseEngine) {
     let start = Instant::now();
     let time_to_wait = &(5 as u64);
     let mut input_data = Vec::new();
@@ -78,7 +80,7 @@ fn wait_for_wakeword(mut receiver: Consumer<i16>, mut runner: precise::PreciseEn
 }
 
 
-fn record_for_stt() {
+fn record_for_stt(mut _receiver: &Consumer<i16>) {
     println!("Recording for STT")
 }
 
