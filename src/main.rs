@@ -55,8 +55,7 @@ fn wait_for_wakeword(mut receiver: Consumer<i16>, mut runner: precise::PreciseEn
         Ok(writer) => writer,
         Err(error) => panic!("{}", error.to_string()),
     };
-
-    while start.elapsed().as_secs().lt(time_to_wait) {
+    loop {
         match receiver.pop() {
             Some(sample) => {
                 input_data.push(sample);
@@ -68,8 +67,11 @@ fn wait_for_wakeword(mut receiver: Consumer<i16>, mut runner: precise::PreciseEn
             for sample in v.iter() {
                 wav_writer.write_sample(*sample).unwrap();
             }
-            runner.get_prediction(v);
+            let wakeword_heard = runner.get_prediction(&v).unwrap();
             input_data.drain(0..2048);
+            if wakeword_heard {
+                break;
+            }
         }
     }
     runner.stop()

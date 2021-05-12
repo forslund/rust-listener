@@ -43,7 +43,13 @@ impl PreciseEngine {
                 Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
             };
             println!("{}", line);
-            Ok(false)
+            match line.trim().parse::<f32>() {
+                Ok(level) => Ok(level > 0.5),
+                Err(e) => {
+                    println!("Error converting confidence: {}", e);
+                    Ok(false)
+                }
+            }
         }
     }
 
